@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane id="AnchorPane" prefHeight="542.0" prefWidth="662.0" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1" fx:controller="jp.tokyo.taneyasu.hobby.view.SceneController">
+   <children>
+      <Button layoutX="32.0" layoutY="332.0" mnemonicParsing="false" onAction="#startRecord" prefHeight="25.0" prefWidth="65.0" text="Start REC" />
+      <TextArea fx:id="outTextArea" layoutX="268.0" layoutY="253.0" prefHeight="259.0" prefWidth="350.0" />
+      <Button layoutX="104.0" layoutY="332.0" mnemonicParsing="false" onAction="#stopREC" prefHeight="25.0" prefWidth="65.0" text="Stop REC" />
+      <Button layoutX="29.0" layoutY="291.0" mnemonicParsing="false" onAction="#openPort" prefHeight="25.0" prefWidth="65.0" text="Open" />
+      <Button layoutX="104.0" layoutY="291.0" mnemonicParsing="false" onAction="#closePort" prefHeight="25.0" prefWidth="65.0" text="Close" />
+      <Button layoutX="175.0" layoutY="332.0" mnemonicParsing="false" onAction="#portListCheck" prefHeight="25.0" prefWidth="87.0" text="check Port" />
+      <TextArea fx:id="monitorTextArea" layoutX="35.0" layoutY="372.0" prefHeight="140.0" prefWidth="193.0" />
+      <TextArea fx:id="sendTextArea" layoutX="268.0" layoutY="50.0" prefHeight="162.0" prefWidth="350.0" />
+      <ComboBox fx:id="portNumberComboBox" editable="true" layoutX="108.0" layoutY="27.0" prefHeight="25.0" prefWidth="87.0" />
+      <ComboBox fx:id="baudRateComboBox" editable="true" layoutX="108.0" layoutY="61.0" prefHeight="25.0" prefWidth="87.0" />
+      <Label layoutX="21.0" layoutY="23.0" prefHeight="34.0" prefWidth="87.0" text="Port Number" />
+      <Label layoutX="29.0" layoutY="65.0" text="Baud Rate" />
+      <ComboBox fx:id="DatabitsComboBox" editable="true" layoutX="108.0" layoutY="104.0" prefHeight="25.0" prefWidth="87.0" />
+      <ComboBox fx:id="StopbitsComboBox" editable="true" layoutX="108.0" layoutY="144.0" prefHeight="25.0" prefWidth="87.0" />
+      <ComboBox fx:id="FlowControlComboBox" editable="true" layoutX="108.0" layoutY="187.0" prefHeight="25.0" prefWidth="87.0" />
+      <Label layoutX="34.0" layoutY="108.0" text="Databits" />
+      <Label layoutX="24.0" layoutY="191.0" text="FlowControl" />
+      <Label layoutX="34.0" layoutY="148.0" text="Stopbits" />
+      <Label layoutX="45.0" layoutY="226.0" text="Parity" />
+      <ComboBox fx:id="ParityComboBox" editable="true" layoutX="108.0" layoutY="222.0" prefHeight="25.0" prefWidth="87.0" />
+      <Label layoutX="26.0" layoutY="263.0" prefHeight="17.0" prefWidth="99.0" text="REC interval[sec]" />
+      <TextField layoutX="132.0" layoutY="259.0" prefHeight="25.0" prefWidth="54.0" text="1" />
+   </children>
+</AnchorPane>
