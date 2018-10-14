@@ -4,25 +4,33 @@ import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
 import java.io.IOException;
 import java.net.URL;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.TooManyListenersException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.collections.FXCollections;
+import javafx.concurrent.ScheduledService;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
+import javafx.util.Duration;
 import jp.tokyo.taneyasu.hobby.data.BaudRate;
 import jp.tokyo.taneyasu.hobby.data.Databits;
 import jp.tokyo.taneyasu.hobby.data.FlowControl;
 import jp.tokyo.taneyasu.hobby.data.Parity;
 import jp.tokyo.taneyasu.hobby.data.PortNumber;
 import jp.tokyo.taneyasu.hobby.data.Stopbits;
+import jp.tokyo.taneyasu.hobby.data.VoltageData;
+import jp.tokyo.taneyasu.hobby.state.Context;
+import jp.tokyo.taneyasu.hobby.state.ReadyState;
+import jp.tokyo.taneyasu.hobby.state.State;
 import jp.tokyo.taneyasu.hobby.utility.CommPort;
-import jp.tokyo.taneyasu.hobby.utility.ReceiveTask;
+import jp.tokyo.taneyasu.hobby.utility.RecordScheduledService;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -34,7 +42,7 @@ import jp.tokyo.taneyasu.hobby.utility.ReceiveTask;
  *
  * @author tanef
  */
-public class SceneController implements Initializable, SerialPortEventListener  {
+public class SceneController implements Initializable, SerialPortEventListener,Context  {
     
     @FXML
     private TextArea sendTextArea;
@@ -55,7 +63,11 @@ public class SceneController implements Initializable, SerialPortEventListener  
     @FXML
     private ComboBox<Parity> ParityComboBox;
     
-    CommPort commPort;
+    
+    public CommPort commPort;
+    private ScheduledService<Boolean> service;
+    private List<VoltageData> voltageDataList = new ArrayList();
+    private State state = ReadyState.getInstance();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -101,7 +113,7 @@ public class SceneController implements Initializable, SerialPortEventListener  
     setMonitorTextArea("open port:" + portNumberComboBox.getValue().getName());
     
     try {
-        commPort.getPort().addEventListener(this);
+        commPort.getPort().addEventListener(this);  
     } catch (TooManyListenersException ex) {
         ex.printStackTrace();
     }
@@ -109,88 +121,13 @@ public class SceneController implements Initializable, SerialPortEventListener  
     
     @FXML
     private void startRecord(){ 
-   
-        try {
-            byte b = (byte) 0x00;
-            commPort.getOut().write(b);
-            Thread.sleep(50);
-        } catch ( IOException | InterruptedException ex) {
-            ex.printStackTrace();
-        }
-      byte[] array = new byte[10];
-       
-       array[0] = (byte) 0x01;
-       array[1] = (byte) 0x31;
-       array[2] = (byte) 0x04;
-       array[3] = (byte) 0x00;
-       array[4] = (byte) 0x00;
-       array[5] = (byte) 0x00;
-       array[6] = (byte) 0x00;
-       array[7] = (byte) 0x00;
-       array[8] = (byte) 0x36; 
-       array[9] = (byte) 0x00;  
-       
-        try {
-            for (int i=0; i<=9 ;i++){
-            commPort.getOut().write(array[i]);
-            setOutTextArea("-->" + String.valueOf(array[i]));
-           }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-            
+        state.doScheduleTask(this);
     }
     
    @FXML 
     private void stopREC(){
-                try {
-            byte b = (byte) 0x00;
-            commPort.getOut().write(b);
-            Thread.sleep(50);
-        } catch ( IOException | InterruptedException ex) {
-            ex.printStackTrace();
-        }
-      byte[] array = new byte[10];
-       
-       array[0] = (byte) 0x01;
-       array[1] = (byte) 0x33;
-       array[2] = (byte) 0x04;
-       array[3] = (byte) 0x00;
-       array[4] = (byte) 0x00;
-       array[5] = (byte) 0x00;
-       array[6] = (byte) 0x00;
-       array[7] = (byte) 0x00;
-       array[8] = (byte) 0x38; 
-       array[9] = (byte) 0x00;  
-       
-        try {
-            for (int i=0; i<=9 ;i++){
-            commPort.getOut().write(array[i]);
-            setOutTextArea("-->" + String.valueOf(array[i]));
-           }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    
-    /*
-        byte[] buffer = new byte[1024];
-        try {
-            int  i =0;
-            System.out.println(21);
-            while(true) { 
-            buffer[i] =(byte) commPort.getIn().read();
-            if(buffer[i]==-1) break;
-            setOutTextArea("<--" + String.valueOf(buffer[i]));
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    */
-    
+    service.cancel();   
     }
-
-    
-
     
     @FXML
     private void closePort(){
@@ -216,22 +153,61 @@ public class SceneController implements Initializable, SerialPortEventListener  
         String separator = System.getProperty("line.separator");
         monitorTextArea.setText(monitorTextArea.getText() + str + separator);
     }
+    
+    @Override
+    public void setVoltageDataList(String receiveData){
+        VoltageData voltageData = new VoltageData();
+        List<String> list = new ArrayList<String>(Arrays.asList(receiveData.split(","))); 
+        /*
+        int ch1X = Integer.valueOf(Integer.toHexString(Integer.valueOf(list.get(6))));
+        int ch1Y = Integer.valueOf(Integer.toHexString(Integer.valueOf(list.get(5))));
+        int ch2X = Integer.valueOf(Integer.toHexString(Integer.valueOf(list.get(8))));
+        int ch2Y = Integer.valueOf(Integer.toHexString(Integer.valueOf(list.get(7))));
+        */
+        int ch1X = Integer.valueOf(list.get(6));
+        int ch1Y = Integer.valueOf(list.get(5));
+        int ch2X = Integer.valueOf(list.get(8));
+        int ch2Y = Integer.valueOf(list.get(7));
+        voltageData.setTimeCh1(LocalTime.now());
+        voltageData.setTimeCh2(LocalTime.now());
+        //ch1 [5],[6],ch2[7][8], -1x(0.256(X-40) + 0.001Y) (負の場合、10進数), 0.256X + 0.001Y (正の場合、10進数)
+        if(ch1X > 64){
+            voltageData.setVoltCh1(-1*(0.256*(ch1X-64) + 0.001*ch1Y));  
+        } else {
+            voltageData.setVoltCh1(0.256*ch1X + 0.001*ch1Y);  
+        }
+        
+        if(ch2X > 64){
+            voltageData.setVoltCh2(-1*(0.256*(ch2X-40) + 0.001*ch2Y));  
+        } else {
+            voltageData.setVoltCh2(0.256*ch2X + 0.001*ch2Y);  
+        }
+   
+        setOutTextArea("Ch1 Time:" + voltageData.getTimeCh1().toString() +", Ch1Voltage:" + voltageData.getVoltCh1() +"Ch2 Time:"+ voltageData.getTimeCh2().toString() +", Ch2 Voltage:"+ voltageData.getVoltCh2() );
+        voltageDataList.add(voltageData);
+    }
+    
+    
 
     @Override
+    public void changeState(State state) {
+        this.state = state;
+    }
+    
+    @Override
         public void serialEvent(SerialPortEvent event) {
-            if (event.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
-                System.out.print(23);
-                //recieveText();
-            ExecutorService ex = Executors.newSingleThreadExecutor();
-            ex.execute(new ReceiveTask(this));
-             ex.shutdown();
-                
-            }
+                state.doTask(this);
+
         }
 
     public CommPort getCommPort() {
         return commPort;
     }
-        
+
+    @Override
+    public void setService(ScheduledService<Boolean> service) {
+        this.service = service;
+    }
+    
 }
     

@@ -50,7 +50,4 @@ public class VoltageData {
         this.voltCh2 = voltCh2;
     }
     
-    
-    
-    
 }
